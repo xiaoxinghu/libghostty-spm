@@ -264,6 +264,26 @@ to move back.
   `TerminalLocaleEnvironment`, which sets `LANG` first so that code never
   runs.
 
+- `0022-surface-snapshot.sh` — `ghostty_surface_load_snapshot`
+  (`include/ghostty.h`, `apprt/embedded.zig`, `termio/Termio.zig`): put the
+  terminal a Ghostty snapshot records into a live surface, for a host whose
+  output comes from a terminal running elsewhere and starts with a snapshot
+  (a multiplexer's client). The decoder returns a new `Terminal`, and the
+  surface's renderer and stream handler hold the address of its own, so the
+  restored terminal is decoded off the lock and swapped in at that address
+  under it. The function returns how many bytes the snapshot took, or 0 with
+  the surface unchanged. In the swap the surface keeps what its
+  configuration set (default colours and palette, scrollback and Kitty
+  image limits) and its grid, the selection gesture lets go of its pin, each
+  screen gets a newer generation so a running search drops its handles to
+  the old ones, the stream starts from ground and replays the snapshot's
+  continuation, and the restored title and working directory go to the host
+  as `set_title` and `pwd_change`. `ghostty_surface_snapshot` and
+  `ghostty_surface_free_snapshot` encode a surface, unfinished sequence
+  included, for which the surface's stream now tracks its continuation
+  (nothing at ground, at most 1 MiB otherwise). Swift:
+  `TerminalSurface.loadSnapshot(_:)` and `snapshot()`.
+
 Dropped once upstream carried them: `0014-free-text-signature.patch`
 (`ghostty_surface_free_text` taking the surface, upstream `4803d58b`). A
 patch that only "already applies" is a liability — the day its context
